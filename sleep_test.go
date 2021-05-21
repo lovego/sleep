@@ -27,7 +27,7 @@ func ExampleSleep_Asleep() {
 	}()
 	s.Sleep(2*time.Millisecond, nil)
 	fmt.Println(s.Asleep())
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(3 * time.Millisecond)
 	// Output:
 	// true
 	// false
