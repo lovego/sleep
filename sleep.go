@@ -7,34 +7,41 @@ import (
 
 type Sleep struct {
 	awakeAt time.Time
+	event   interface{}
 	asleep  bool
-	refresh chan struct{}
+	events  chan interface{}
 	sync.RWMutex
 
 	debug bool
 }
 
-// `Sleep` method on a single `Sleep` instance should not be called concurrently,
+// Sleep method on a single `Sleep` instance should not be called concurrently,
 // otherwise only a random one will be awaken up by `Awake*` methods.
-// `Sleep` method on a single `Sleep` instance can be called many times serially.
-func (s *Sleep) Sleep(d time.Duration) {
-	s.SetAwakeAt(time.Now().Add(d))
+// Sleep method on a single `Sleep` instance can be called many times serially.
+// Sleep returns the event that awaken it.
+func (s *Sleep) Sleep(d time.Duration, event interface{}) interface{} {
+	s.SetAwakeAt(time.Now().Add(d), event)
 
-	s.Run()
+	return s.Run()
 }
 
-// `Run` method on a single `Sleep` instance should not be called concurrently,
+// Run method on a single `Sleep` instance should not be called concurrently,
 // otherwise only a random one will be awaken up by `Awake*` methods.
-// `Run` method on a single `Sleep` instance can be called many times serially.
-func (s *Sleep) Run() {
-	d := time.Until(s.GetAwakeAt())
+// Run method on a single `Sleep` instance can be called many times serially.
+// Run returns the event that awaken it.
+func (s *Sleep) Run() interface{} {
+	s.RLock()
+	var d = time.Until(s.awakeAt)
+	var event = s.event
+	s.RUnlock()
+
 	if d <= 0 {
-		return
+		return event
 	}
 
 	s.Lock()
-	if s.refresh == nil {
-		s.refresh = make(chan struct{})
+	if s.events == nil {
+		s.events = make(chan interface{})
 	}
 	s.asleep = true
 	s.Unlock()
@@ -50,11 +57,11 @@ func (s *Sleep) Run() {
 		select {
 		case <-timer.C:
 			timer.Stop()
-			return
-		case <-s.refresh:
+			return event
+		case event = <-s.events:
 			timer.Stop()
 			if d = time.Until(s.GetAwakeAt()); d <= 0 {
-				return
+				return event
 			}
 		}
 	}
@@ -74,10 +81,11 @@ func (s *Sleep) GetAwakeAt() time.Time {
 }
 
 // set awake at time.
-func (s *Sleep) SetAwakeAt(at time.Time) {
+func (s *Sleep) SetAwakeAt(at time.Time, event interface{}) {
 	s.Lock()
 	defer s.Unlock()
 	s.awakeAt = at
+	s.event = event
 }
 
 // set awake at time to zero time.
@@ -88,31 +96,31 @@ func (s *Sleep) ClearAwakeAt() {
 }
 
 // set awake at time to the specified time, and awake at the specified time if asleep.
-func (s *Sleep) AwakeAt(at time.Time) {
-	s.SetAwakeAt(at)
+func (s *Sleep) AwakeAt(at time.Time, event interface{}) {
+	s.SetAwakeAt(at, event)
 	select {
-	case s.refresh <- struct{}{}:
+	case s.events <- event:
 	default:
 	}
 }
 
 // the same as s.AwakeAt(time.Now())
-func (s *Sleep) Awake() {
-	s.AwakeAt(time.Now())
+func (s *Sleep) Awake(event interface{}) {
+	s.AwakeAt(time.Now(), event)
 }
 
 // if current awake at time is zero time or the specified time is ealier than current awake at time,
 // call s.AwakeAt(at), otherwise do nothing.
-func (s *Sleep) AwakeAtEalier(at time.Time) {
+func (s *Sleep) AwakeAtEalier(at time.Time, event interface{}) {
 	if awakeAt := s.GetAwakeAt(); awakeAt.IsZero() || at.Before(awakeAt) {
-		s.AwakeAt(at)
+		s.AwakeAt(at, event)
 	}
 }
 
 // if the specified time is later than current awake at time, call s.AwakeAt(at),
 // otherwise do nothing.
-func (s *Sleep) AwakeAtLater(at time.Time) {
+func (s *Sleep) AwakeAtLater(at time.Time, event interface{}) {
 	if at.After(s.GetAwakeAt()) {
-		s.AwakeAt(at)
+		s.AwakeAt(at, event)
 	}
 }
