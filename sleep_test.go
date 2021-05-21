@@ -12,7 +12,7 @@ func ExampleSleep_Sleep() {
 	go func() {
 		fmt.Println(s.Sleep(0, "wake up"))
 	}()
-	time.Sleep(time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 	// Output:
 	// wake up
 }
@@ -27,7 +27,7 @@ func ExampleSleep_Asleep() {
 	}()
 	s.Sleep(2*time.Millisecond, nil)
 	fmt.Println(s.Asleep())
-	time.Sleep(3 * time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 	// Output:
 	// true
 	// false
@@ -52,7 +52,7 @@ func ExampleSleep_Awake() {
 	}()
 	time.Sleep(time.Millisecond)
 	s.Awake("hi, wake up")
-	time.Sleep(time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 
 	// Output:
 	// hi, wake up
@@ -71,7 +71,7 @@ func ExampleSleep_AwakeAtEalier_1() {
 	go func() {
 		fmt.Println(s.Run())
 	}()
-	time.Sleep(3 * time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 
 	// Output:
 	// true
@@ -88,7 +88,7 @@ func ExampleSleep_AwakeAtEalier_2() {
 	}()
 	time.Sleep(time.Millisecond)
 	s.AwakeAtEalier(time.Now().Add(time.Millisecond), "hi, wake up")
-	time.Sleep(3 * time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 	// Output:
 	// hi, wake up
 }
@@ -106,7 +106,7 @@ func ExampleSleep_AwakeAtLater_1() {
 	go func() {
 		fmt.Println(s.Run())
 	}()
-	time.Sleep(3 * time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 
 	// Output:
 	// true
